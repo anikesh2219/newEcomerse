@@ -1,4 +1,4 @@
-var account = require('../model/products');
+var account = require('../model/accounts');
 
 
 exports.account_open= async (req, res) => {

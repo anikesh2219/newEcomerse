@@ -1,4 +1,4 @@
-var account = require('../model/products');
+var account = require('../model/accounts');
 
 exports.account_create= async (req, res) => {
     const { username, email, password } = req.body;

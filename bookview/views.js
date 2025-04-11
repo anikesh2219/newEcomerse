@@ -1,4 +1,4 @@
-var list = require('../model/products');
+var list = require('../model/lists');
 
 
 exports.book_create= async (req, res) => {
