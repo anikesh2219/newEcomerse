@@ -1,78 +1,66 @@
-var bookorder = require('../model/orders');
-var account = require('../model/accounts');
-var list = require('../model/lists');
+var Bookorder = require("../model/orders");
+var Account = require("../model/accounts");
+var List = require("../model/lists");
+const jwt = require("jsonwebtoken");
+const { ObjectId } = require("mongoose").Types;
+require("dotenv").config();
 
-exports.book_order = async (req, res) => {
-  const { userId, bookId, quantity } = req.body;
 
-  // Basic validation
-  if (!userId || !bookId || !quantity) {
-    return res.status(400).json({ msg: 'Please provide userId, bookId, and quantity' });
+
+const book_order = async (req, res) => {
+  const { bookId, quantity } = req.body;
+  const userId = req.user.userId;
+
+  if (!bookId || !quantity) {
+    return res
+      .status(400)
+      .json({ msg: "Please provide, bookId, and quantity" });
   }
-
   try {
-    // Check if user exists
-    console.log('Searching for user with ID:', userId);
-
-    const user = await account.findById(userId);
-    console.log('User found:', user);
-
-    if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
-    }
-
-    // Check if book exists
-    const book = await list.findById(bookId);
+    const book = await List.findById(bookId);
     if (!book) {
-      return res.status(404).json({ msg: 'Book not found' });
+      return res.status(404).json({ msg: "Book not found" });
     }
-
-    // Create new order
-    const newOrder = new bookorder({
+    const order = await Bookorder.create({
       user: userId,
       book: bookId,
-      quantity
+      quantity,
     });
 
-    // Save order to database
-    await newOrder.save();
-
-    res.status(201).json(newOrder);
+    res.status(201).json(order);
   } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
+    console.log("Error occurred:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+const get_orders = async (req, res) => {
+  const userId = req.user.userId;
+  const perPage = 3;
+  const page = parseInt(req.query.page) || 1;
+  const skip = (page - 1) * perPage;
+  
+  try {
+    // const orders = await Bookorder.find({ user: userId }).limit(perPage).skip(skip);
+    const orders = await Bookorder.aggregate([
+      {$match: { user: new ObjectId(userId) }},
+      {$lookup: {
+        from: "books",
+        localField: "book",
+        foreignField: "_id",
+        as: "bookInfo"
+      }},
+      {$unwind: "$bookInfo"},
+      { $skip: skip },
+      { $limit: perPage
+      },
+    ]);
+    const totalOrders = await Bookorder.countDocuments({ user: userId });
+    res.status(200).json({totalPages:Math.ceil(totalOrders/perPage), data:orders });
+  } catch (err) {
+    console.log("Error occurred:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 }
 
-// const { bookorder, account, list } = require('../model/products'); // Single import for clarity
-
-// exports.book_order = async (req, res) => {
-//   const { userId, bookId, quantity } = req.body;
-
-//   // Basic validation
-//   if (!userId || !bookId || !quantity || quantity <= 0) {
-//     return res.status(400).json({ msg: 'Invalid input: Ensure userId, bookId, and positive quantity' });
-//   }
-
-//   try {
-//     // Check if user exists
-//     const user = await account.findById(userId);
-//     if (!user) {
-//       return res.status(404).json({ msg: 'User not found' });
-//     }
-
-//     // Check if book exists
-//     const book = await list.findById(bookId);
-//     if (!book) {
-//       return res.status(404).json({ msg: 'Book not found' });
-//     }
-
-//     // Create and save order
-//     const newOrder = new bookorder({ user: userId, book: bookId, quantity });
-//     const savedOrder = await newOrder.save();
-
-//     res.status(201).json(savedOrder);
-//   } catch (err) {
-//     console.error('Error creating order:', err.message); // Detailed logging for debugging
-//     res.status(500).json({ msg: 'Server error', error: err.message });
-//   }
-// };
+module.exports = {book_order, get_orders};

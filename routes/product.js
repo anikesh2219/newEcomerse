@@ -5,7 +5,8 @@ var router = express.Router();
 var account_signup = require('../signup/sign');
 var account_login = require('../login/login')
 var list_view = require('../bookview/views')
-var new_order = require('../order/orders')
+var new_order = require('../order/orders');
+const validateToken = require('../middlewares/validateToken');
 // a simple test url to check that all of our files are communicating correctly.
 
 
@@ -19,7 +20,8 @@ router.get('/api/books/:id',list_view.book_view )
 router.put('/api/books/:id',list_view.book_update )
 router.delete('/api/books/:id',list_view.book_delete )
 
-router.post('/api/orders', new_order.book_order)
+router.post('/api/orders',validateToken, new_order.book_order)
+router.get('/api/orders',validateToken, new_order.get_orders)
 
 
 
