@@ -4,11 +4,11 @@ var list = require('../model/lists');
 exports.book_create= async (req, res) => {
     const { title, author, price } = req.body;
     try {
-      const newBook = new list({ title, author, price, publishDate });
+      const newBook = new list({ title, author, price});
       await newBook.save();
       res.status(201).json(newBook);
     } catch (err) {
-      res.status(400).json({ message: 'Error creating book', error: err });
+      res.status(500).json({ message: 'Error creating book', error: err });
     }
   };
   
@@ -40,9 +40,9 @@ exports.book_create= async (req, res) => {
   // Update a book by ID
    exports.book_update = async (req, res) => {
     const { id } = req.params;
-    const { title, author, price, publishDate } = req.body;
+    const { title, author, price } = req.body;
     try {
-      const updatedBook = await list.findByIdAndUpdate(id, { title, author, price, publishDate }, { new: true });
+      const updatedBook = await list.findByIdAndUpdate(id, { title, author, price }, { new: true });
       if (updatedBook) {
         res.status(200).json(updatedBook);
       } else {
